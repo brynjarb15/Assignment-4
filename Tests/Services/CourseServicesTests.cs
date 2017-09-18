@@ -160,7 +160,7 @@ namespace CoursesAPI.Tests.Services
 
 		#region GetCoursesBySemester
 		/// <summary>
-		/// TODO: implement this test, and several others!
+		/// Tests if we return an empty list if there is no data for the given semester
 		/// </summary>
 		[TestMethod]
 		public void GetCoursesBySemester_ReturnsEmptyListWhenNoDataDefined()
@@ -173,6 +173,9 @@ namespace CoursesAPI.Tests.Services
 			Assert.IsTrue(result.Count == 0);
 		}
 
+		/// <summary>
+		/// Checks if there are 2 courses in the semester 20163
+		/// </summary>
 		[TestMethod]
 		public void GetCoursesBySemester_ReturnsTwoCourseForSemester20163()
 		{
@@ -182,7 +185,22 @@ namespace CoursesAPI.Tests.Services
 			// Assert:
 			Assert.IsTrue(result.Count == 2);
 		}
+		/// <summary>
+		/// Checks the number of courses for the semester 20153
+		/// </summary>
+		[TestMethod]
+		public void GetCoursesBySemester_GetTwoCoursesForSemester20153()
+		{
+			// Arrange:
+			// Act:
+			var result = _service.GetCourseInstancesBySemester("20153");
+			// Assert:
+			Assert.IsTrue(result.Count == 1);
+		}
 
+		/// <summary>
+		/// Checks if there are 2 courses in the semester 20143
+		/// </summary>
 		[TestMethod]
 		public void GetCoursesBySemester_ReturnsTwoCourseForSemester20143()
 		{
@@ -192,6 +210,10 @@ namespace CoursesAPI.Tests.Services
 			// Assert:
 			Assert.IsTrue(result.Count == 2);
 		}
+		/// <summary>
+		/// Checks if the course returned if nothing is sent in is Vefþjónustur which is the only
+		/// course in the semester 20153
+		/// </summary>
 		[TestMethod]
 		public void GetCoursesBySemester_ReturnsVefthjonusturNothingIsSentIn()
 		{
@@ -202,8 +224,12 @@ namespace CoursesAPI.Tests.Services
 			Assert.IsTrue(result.Count == 1);
 			Assert.AreEqual(result[0].Name, "Vefþjónustur");
 			Assert.AreEqual(result[0].TemplateID, "T-514-VEFT");
+			Assert.AreEqual(result[0].CourseInstanceID, COURSEID_VEFT_20153);
 		}
-		
+		/// <summary>
+		/// Checks if the main techer in the only course in the semester 20153
+		/// is Dabs
+		/// </summary>
 		[TestMethod]
 		public void GetCoursesBySemester_ReturnsDABSAsMainTeacher()
 		{
@@ -213,18 +239,10 @@ namespace CoursesAPI.Tests.Services
 			// Assert:
 			Assert.AreEqual(result[0].MainTeacher, NAME_DABS);
 		}
-		
-		[TestMethod]
-		public void GetCoursesBySemester_GetTwoCoursesForSemester20163()
-		{
-			// Arrange:
-			// Act:
-			var result = _service.GetCourseInstancesBySemester("20163");
-			// Assert:
-			Assert.IsTrue(result.Count == 2);
-			Assert.AreEqual(result[1].MainTeacher, "");
-		}
-
+		/// <summary>
+		/// No main teachers have been registered to the courses of semester 20163
+		/// so all the teachers name should be ""
+		/// </summary>
 		[TestMethod]
 		public void GetCoursesBySemester_AllTeacherShouldBeEmpty()
 		{
@@ -237,6 +255,9 @@ namespace CoursesAPI.Tests.Services
 				Assert.AreEqual(c.MainTeacher, "");
 			}
 		}
+		/// <summary>
+		/// Check if it returns different teacher name for different courses
+		/// </summary>
 		[TestMethod]
 		public void GetCoursesBySemester_GetDifferentMainTeacherForDifferentCourses()
 		{
