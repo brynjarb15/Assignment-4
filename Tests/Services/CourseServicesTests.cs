@@ -22,13 +22,16 @@ namespace CoursesAPI.Tests.Services
 		private const string INVALID_SSN = "9876543210";
 
 		private const string NAME_GUNNA  = "Guðrún Guðmundsdóttir";
-
+		private const string NAME_DABS = "Daníel B. Sigurgeirsson";
 		private const int COURSEID_VEFT_20153 = 1337;
 		private const int COURSEID_VEFT_20163 = 1338;
+		private const int COURSEID_BATM_20163 = 1339;
+		private const int COURSEID_VEFT_20143 = 1340;
+		private const int COURSEID_BATM_20143 = 1341;
 		private const int INVALID_COURSEID    = 9999;
 
 		[TestInitialize]
-        public void CourseServicesTestsSetup()
+		public void CourseServicesTestsSetup()
 		{
 			_mockUnitOfWork = new MockUnitOfWork<MockDataContext>();
 
@@ -40,7 +43,7 @@ namespace CoursesAPI.Tests.Services
 				new Person
 				{
 					ID    = 1,
-					Name  = "Daníel B. Sigurgeirsson",
+					Name  = NAME_DABS,
 					SSN   = SSN_DABS,
 					Email = "dabs@ru.is"
 				},
@@ -63,6 +66,12 @@ namespace CoursesAPI.Tests.Services
 					CourseID    = "T-514-VEFT",
 					Description = "Í þessum áfanga verður fjallað um vefþj...",
 					Name        = "Vefþjónustur"
+				},
+				new CourseTemplate
+				{
+					CourseID = "T-313-BATM",
+					Description = "Learn to fight crimes",
+					Name = "Crime fighting"
 				}
 			};
 			#endregion
@@ -81,6 +90,24 @@ namespace CoursesAPI.Tests.Services
 					ID         = COURSEID_VEFT_20163,
 					CourseID   = "T-514-VEFT",
 					SemesterID = "20163"
+				},
+				new CourseInstance
+				{
+					ID = COURSEID_BATM_20163,
+					CourseID = "T-313-BATM",
+					SemesterID = "20163"
+				},
+				new CourseInstance
+				{
+					ID = COURSEID_BATM_20143,
+					CourseID = "T-313-BATM",
+					SemesterID = "20143"
+				},
+				new CourseInstance
+				{
+					ID         = COURSEID_VEFT_20143,
+					CourseID   = "T-514-VEFT",
+					SemesterID = "20143"
 				}
 			};
 			#endregion
@@ -94,7 +121,29 @@ namespace CoursesAPI.Tests.Services
 					CourseInstanceID = COURSEID_VEFT_20153,
 					SSN              = SSN_DABS,
 					Type             = TeacherType.MainTeacher
+				},
+				new TeacherRegistration
+				{
+					ID = 102,
+					CourseInstanceID = COURSEID_VEFT_20153,
+					SSN = SSN_GUNNA,
+					Type = TeacherType.AssistantTeacher
+				},
+				new TeacherRegistration
+				{
+					ID               = 103,
+					CourseInstanceID = COURSEID_BATM_20143,
+					SSN              = SSN_DABS,
+					Type             = TeacherType.MainTeacher
+				},
+				new TeacherRegistration
+				{
+					ID               = 104,
+					CourseInstanceID = COURSEID_VEFT_20143,
+					SSN              = SSN_GUNNA,
+					Type             = TeacherType.MainTeacher
 				}
+				
 			};
 			#endregion
 
@@ -103,7 +152,7 @@ namespace CoursesAPI.Tests.Services
 			_mockUnitOfWork.SetRepositoryData(courses);
 			_mockUnitOfWork.SetRepositoryData(_teacherRegistrations);
 
-			// TODO: this would be the correct place to add 
+			// TODO: this would be the correct place to add
 			// more mock data to the mockUnitOfWork!
 
 			_service = new CoursesServiceProvider(_mockUnitOfWork);
@@ -117,14 +166,90 @@ namespace CoursesAPI.Tests.Services
 		public void GetCoursesBySemester_ReturnsEmptyListWhenNoDataDefined()
 		{
 			// Arrange:
-
+			var semesterWithNoCourse = "20173";
 			// Act:
-
+			var result = _service.GetCourseInstancesBySemester(semesterWithNoCourse);
 			// Assert:
-			// Assert.True(true);
+			Assert.IsTrue(result.Count == 0);
 		}
 
-		// TODO!!! you should write more unit tests here!
+		[TestMethod]
+		public void GetCoursesBySemester_ReturnsTwoCourseForSemester20163()
+		{
+			// Arrange:
+			// Act:
+			var result = _service.GetCourseInstancesBySemester("20163");
+			// Assert:
+			Assert.IsTrue(result.Count == 2);
+		}
+
+		[TestMethod]
+		public void GetCoursesBySemester_ReturnsTwoCourseForSemester20143()
+		{
+			// Arrange:
+			// Act:
+			var result = _service.GetCourseInstancesBySemester("20143");
+			// Assert:
+			Assert.IsTrue(result.Count == 2);
+		}
+		[TestMethod]
+		public void GetCoursesBySemester_ReturnsVefthjonusturNothingIsSentIn()
+		{
+			// Arrange:
+			// Act:
+			var result = _service.GetCourseInstancesBySemester();
+			// Assert:
+			Assert.IsTrue(result.Count == 1);
+			Assert.AreEqual(result[0].Name, "Vefþjónustur");
+			Assert.AreEqual(result[0].TemplateID, "T-514-VEFT");
+		}
+		
+		[TestMethod]
+		public void GetCoursesBySemester_ReturnsDABSAsMainTeacher()
+		{
+			// Arrange:
+			// Act:
+			var result = _service.GetCourseInstancesBySemester("20153");
+			// Assert:
+			Assert.AreEqual(result[0].MainTeacher, NAME_DABS);
+		}
+		
+		[TestMethod]
+		public void GetCoursesBySemester_GetTwoCoursesForSemester20163()
+		{
+			// Arrange:
+			// Act:
+			var result = _service.GetCourseInstancesBySemester("20163");
+			// Assert:
+			Assert.IsTrue(result.Count == 2);
+			Assert.AreEqual(result[1].MainTeacher, "");
+		}
+
+		[TestMethod]
+		public void GetCoursesBySemester_AllTeacherShouldBeEmpty()
+		{
+			// Arrange:
+			// Act:
+			var result = _service.GetCourseInstancesBySemester("20163");
+			// Assert:
+			foreach(var c in result)
+			{
+				Assert.AreEqual(c.MainTeacher, "");
+			}
+		}
+		[TestMethod]
+		public void GetCoursesBySemester_GetDifferentMainTeacherForDifferentCourses()
+		{
+			// Arrange:
+			// Act:
+			var result = _service.GetCourseInstancesBySemester("20143");
+			// Assert:
+			Assert.AreEqual(result[0].MainTeacher, NAME_DABS);
+			Assert.AreEqual(result[1].MainTeacher, NAME_GUNNA);
+		}
+
+
+
 
 		#endregion
 
@@ -182,6 +307,10 @@ namespace CoursesAPI.Tests.Services
 			};
 
 			// Act:
+			_service.AddTeacherToCourse(INVALID_COURSEID, model);
+
+			// Assert:
+			// should throw exception
 		}
 
 		/// <summary>
@@ -199,7 +328,11 @@ namespace CoursesAPI.Tests.Services
 				Type = TeacherType.MainTeacher
 			};
 
-			// Act: 
+			// Act:
+			_service.AddTeacherToCourse(COURSEID_VEFT_20163, model);
+
+			// Assert:
+			// Should throw exception
 		}
 
 		/// <summary>
@@ -217,9 +350,13 @@ namespace CoursesAPI.Tests.Services
 				SSN  = SSN_GUNNA,
 				Type = TeacherType.MainTeacher
 			};
-			
 
 			// Act:
+			// there already is a main teacher in this course
+			_service.AddTeacherToCourse(COURSEID_VEFT_20153, model);
+
+			// Assert:
+			// Should throw exception
 		}
 
 		/// <summary>
@@ -239,6 +376,11 @@ namespace CoursesAPI.Tests.Services
 			};
 
 			// Act:
+			// DABS is allready in this course
+			_service.AddTeacherToCourse(COURSEID_VEFT_20153, model);
+
+			// Assert:
+			// Should throw exception
 
 		}
 

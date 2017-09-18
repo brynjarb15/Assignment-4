@@ -34,6 +34,39 @@ namespace CoursesAPI.Services.CoursesServices
 		/// <returns>Should return basic information about the person.</returns>
 		public PersonDTO AddTeacherToCourse(int courseInstanceID, AddTeacherViewModel model)
 		{
+			var course = (from c in _courseInstances.All()
+						  where c.ID == courseInstanceID
+						  select c).SingleOrDefault();
+			if (course == null)
+			{
+				throw new AppObjectNotFoundException();
+			}
+			var newTeacher = (from t in _persons.All()
+							  where t.SSN == model.SSN
+							  select new PersonDTO
+							  {
+								  SSN = t.SSN,
+								  Name = t.Name,
+							  }).SingleOrDefault();
+			if (newTeacher == null)
+			{
+				throw new AppObjectNotFoundException();
+			}
+			var isTeacherInCourse = (from t in _teacherRegistrations.All()
+									 where t.SSN == newTeacher.SSN &&
+									 	   t.CourseInstanceID == courseInstanceID
+									select t).SingleOrDefault();
+			if (isTeacherInCourse != null){
+				throw new AppValidationException("The teacher is already registered to this course");
+			}
+			var isThereAMainTeacher = (from t in _teacherRegistrations.All()
+									   where t.CourseInstanceID == courseInstanceID &&
+									         t.Type == TeacherType.MainTeacher
+									   select t).SingleOrDefault();
+			if (isThereAMainTeacher != null && model.Type == TeacherType.MainTeacher)
+			{
+				throw new AppValidationException("There already is a main theacher in this course");
+			}
 			var teacherEntity = new TeacherRegistration
 			{
 				SSN = model.SSN,
@@ -42,13 +75,7 @@ namespace CoursesAPI.Services.CoursesServices
 			};
 			_teacherRegistrations.Add(teacherEntity);
 			_uow.Save();
-			var newTeacher = (from t in _persons.All()
-							  where t.SSN == model.SSN
-							  select new PersonDTO
-							  {
-								  SSN = t.SSN,
-								  Name = t.Name,
-							  }).SingleOrDefault();
+			
 
 			return newTeacher;
 		}
@@ -75,8 +102,21 @@ namespace CoursesAPI.Services.CoursesServices
 					Name               = ct.Name,
 					TemplateID         = ct.CourseID,
 					CourseInstanceID   = c.ID,
-					MainTeacher        = "" // Hint: it should not always return an empty string!
+					MainTeacher        = (from t in _persons.All()
+										  join tr in _teacherRegistrations.All() on t.SSN equals tr.SSN
+										  where tr.CourseInstanceID == c.ID &&
+												tr.Type == TeacherType.MainTeacher
+										  select t.Name).SingleOrDefault()
 				}).ToList();
+
+//			courses.All(x => {x.MainTeacher == null ? x.MainTeacher = "" : x.MainTeacher = x.MainTeacher; return true;});
+			foreach(var c in courses)
+			{
+				if (c.MainTeacher == null)
+				{
+					c.MainTeacher = "";
+				}
+			}
 
 			return courses;
 		}
